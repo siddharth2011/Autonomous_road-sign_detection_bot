@@ -1,0 +1,162 @@
+                 CODE FOR IMPLEMENTATON OF AI & IOT (second attempt) 
+
+import cv2
+import numpy as np
+import time as time
+from time import sleep
+import RPi.GPIO as GPIO
+ 
+GPIO.setmode(GPIO.BOARD)
+GPIO.setwarnings(False)
+Forward=36
+Backward=12
+lt=3
+rt=5
+buzzer=7
+ 
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(Forward, GPIO.OUT)
+GPIO.setup(Backward, GPIO.OUT)
+GPIO.setup(lt,GPIO.OUT)
+GPIO.setup(rt,GPIO.OUT)
+GPIO.setup(buzzer,GPIO.OUT)
+left_sign = cv2.CascadeClassifier("left_sign.xml")
+stop_sign=cv2.CascadeClassifier("stopsign.xml")
+right_sign=cv2.CascadeClassifier("right_sign.xml")
+straight_sign=cv2.CascadeClassifier("straight_sign.xml")
+go_sign = cv2.CascadeClassifier("go_sign.xml")
+person_detect = cv2.CascadeClassifier("haarcascade_fullbody.xml")
+ 
+ 
+cap=cv2.VideoCapture(0)
+
+def go_straight():
+    GPIO.output(buzzer, GPIO.LOW)
+    print("straight")
+    GPIO.output(Forward, GPIO.HIGH)
+    print("Moving Forward")
+    GPIO.output(Backward, GPIO.HIGH)   
+def right_turn():
+	GPIO.output(buzzer, GPIO.LOW)
+	for i in range(0,5):
+		GPIO.output(rt, GPIO.HIGH) # Turn on
+		sleep(1) # Sleep for 1 second
+		GPIO.output(rt, GPIO.LOW) # Turn off
+		sleep(1)
+		
+	print("right_turn")
+	GPIO.output(Forward, GPIO.LOW)
+	GPIO.output(Backward, GPIO.HIGH)
+	time.sleep(5)
+	print("Right")
+def left_turn():
+	GPIO.output(buzzer, GPIO.LOW)
+	for i in range(0,5):
+		GPIO.output(lt, GPIO.HIGH) # Turn on
+		sleep(1) # Sleep for 1 second
+		GPIO.output(lt, GPIO.LOW) # Turn off
+		sleep(1)
+	print("left_turn")
+	GPIO.output(Forward, GPIO.HIGH)
+	GPIO.output(Backward, GPIO.LOW)
+	print("left")
+def stop(x):
+	print(x)
+	if(x==0):
+		GPIO.output(buzzer, GPIO.LOW)
+		print("stop")
+		GPIO.output(Forward, GPIO.LOW)
+		print("STOP")
+		GPIO.output(Backward, GPIO.LOW)
+if x==1:
+	GPIO.output(buzzer, GPIO.HIGH)
+	print("stop")
+	GPIO.output(Forward, GPIO.LOW)
+	print("STOP")
+	GPIO.output(Backward, GPIO.LOW)
+ 
+def sign_detect():
+
+    while True:
+        img=cap.read()
+        gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        leftsign = left_sign.detectMultiScale(gray,1.1,5)
+        stopsign = stop_sign.detectMultiScale(gray,1.1,5)
+        rightsign = right_sign.detectMultiScale(gray,1.1,5)
+        person = person_detect.detectMultiScale(gray,1.1,5)
+        straightsign=straight_sign.detectMultiScale(gray,1.1,5)
+        gosign=go_sign.detectMultiScale(gray,1.1,5)
+        
+
+#straight sign
+        a=1
+        for (x,y,w,h) in straightsign:
+            a=0
+            xs="STRAIGHT SIGN"
+            cv2.rectangle(img , (x,y),(x+w,y+h),(255,250,0),2)
+            cv2.putText(img,xs,(x,y),cv2.FONT_HERSHEY_SIMPLEX,0.5,(120,120,3),2,cv2.LINE_AA)
+            roi_gray=gray[y:y+h,x:x+w]
+            roi_color=img[y:y+h,x:x+w]
+            #print(xs)
+            go_straight()
+ 
+        
+        #persons
+        for (x,y,w,h) in person:
+            a=0
+            cv2.rectangle(img , (x,y),(x+w,y+h),(255,250,0),2)
+            cv2.putText(img,"PERSON",(x,y),cv2.FONT_HERSHEY_SIMPLEX,0.5,(120,120,3),2,cv2.LINE_AA)
+            roi_gray=gray[y:y+h,x:x+w]
+            roi_color=img[y:y+h,x:x+w]
+            xs="PERSON"
+            #print(xs)
+            stop(1)
+        #right sign
+        for (x,y,w,h) in rightsign:
+            a=0
+            cv2.rectangle(img , (x,y),(x+w,y+h),(255,250,0),2)
+            cv2.putText(img,"RIGHTSIGN",(x,y),cv2.FONT_HERSHEY_SIMPLEX,0.5,(120,120,3),2,cv2.LINE_AA)
+            roi_gray=gray[y:y+h,x:x+w]
+            roi_color=img[y:y+h,x:x+w]
+            xs="RIGHT SIGN"
+            #print(xs)
+            right_turn()
+
+ #stop sign
+        for (x,y,w,h) in stopsign:
+            a=0
+            xs="STOP SIGN"
+            cv2.rectangle(img , (x,y),(x+w,y+h),(255,250,0),2)
+            cv2.putText(img,xs,(x,y),cv2.FONT_HERSHEY_SIMPLEX,0.5,(120,120,3),2,cv2.LINE_AA)
+            roi_gray=gray[y:y+h,x:x+w]
+            roi_color=img[y:y+h,x:x+w]
+            #print(xs)
+            stop(0)
+        #left sign
+        for (x,y,w,h) in leftsign:
+            a=0
+            cv2.rectangle(img , (x,y),(x+w,y+h),(255,0,0),2)
+            cv2.putText(img,"LEFTSIGN",(x,y),cv2.FONT_HERSHEY_SIMPLEX,0.5,(120,120,3),2,cv2.LINE_AA)
+            roi_gray=gray[y:y+h,x:x+w]
+            roi_color=img[y:y+h,x:x+w]
+            xs="left SIGN"
+            #print(xs)
+            left_turn()
+ 
+        
+if a==1:
+            #print("none")
+            go_straight()
+        cv2.imshow("img",img)
+        key=cv2.waitKey(10)
+        if key==27:
+            break
+sign_detect()
+#go_straight()
+#right_turn()
+#left_turn()
+#stop()
+GPIO.cleanup() 
+cap.release()
+cv2.destroyAllWindows()
+
